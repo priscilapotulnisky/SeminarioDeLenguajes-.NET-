@@ -1,0 +1,106 @@
+﻿@page "/listarexpedientes"
+
+<!-- Caso de uso Expedientes -->
+@inject CasoDeUsoExpedienteConsultaTodos listarExpedientes
+
+<!-- Caso de uso Usuarios -->
+@inject CasoDeUsoUsuarioActivo usuarioActual // Para obtener el usuario actual
+
+<!-- Uso de la página -->
+@inject NavigationManager navigationManager
+@rendermode InteractiveServer
+
+@if (!_error) { //En caso de error al inicializar la pagina
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <h3>Lista de Expedientes</h3>
+
+                <!-- Tabla con los expedientes -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Carátula</th>
+                                <th>Estado</th>
+                                <th>Fecha creación</th>
+                                <th>Fecha modificación</th>
+                                <th>ID de usuario</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var expediente in _lista) {
+                                <tr>
+                                    <td>@expediente.Id</td>
+                                    <td>@expediente.Caratula</td>
+                                    <td>@expediente.EstadoExpediente</td>
+                                    <td>@expediente.FechaCreacion</td>
+                                    <td>@expediente.FechaModiificacion</td>
+                                    <td>@expediente.IdUsuario</td>
+                                    <td>
+                                        <!-- Examinar un expediente específico -->
+                                        <button @onclick="()=>_VerExpediente(expediente.Id)" class="btn btn-primary">Examinar</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+else {
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <ComponentError Text="@_stMensaje" ErrorSesion="@_error" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+#region Variables de Expediente
+
+    // Listar los Expedientes
+    private List<Expediente> _lista = new List<Expediente>();
+
+#endregion Variables de Expediente
+
+#region Variables de Errores
+
+    private bool _error = false;
+    private string _stMensaje = "";
+
+#endregion Variables de Errores
+
+#region Métodos de página
+
+    // Al inicializar el componente muestra la lista
+    protected override void OnInitialized() {
+        try {
+            usuarioActual.Ejecutar(out _error);
+            _lista = listarExpedientes.Ejecutar();
+        } catch (Exception e) {
+            _stMensaje = $"Ocurrió un error inesperado. {e.Message}";
+        }
+    }
+
+#endregion Métodos de página
+
+#region Métodos de Expediente
+
+    // Envía al usuario a la página del expediente solicitado
+    private void _VerExpediente(int? id) {
+        navigationManager.NavigateTo($"expediente/{id}");
+    }
+
+#endregion Métodos de Expediente
+
+}

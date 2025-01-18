@@ -1,0 +1,304 @@
+﻿@page "/usuario/{IdUsuario:int?}"
+
+<!-- Caso de uso Usuarios -->
+@inject CasoDeUsoObtenerUsuario consultar
+@inject CasoDeUsoModificarUsuario modificar 
+
+<!-- Caso de uso Sesion -->
+@inject CasoDeUsoCerrarSesionActual cerrarSesion
+@inject CasoDeUsoObtenerSesionActual sesionActual
+
+<!-- Caso de uso Permiso -->
+@inject CasoDeUsoAgregarPermiso agregarPermiso
+@inject CasoDeUsoEliminarPermiso eliminarPermiso
+@inject CasoDeUsoUsuarioActivo usuarioActivo
+
+<!-- Uso de la página -->
+@inject NavigationManager navigationManager // Navegar entre páginas
+@rendermode InteractiveServer // Para actualización de la página en caso de errores
+
+@if(!_error) {
+    @if(!_modificarUsuario) { // No se modifica el usuario
+        <div class="container">
+            <h3 class="mt-4 mb-3">Datos de Usuario</h3>
+            
+            <div style="font-size: large;">
+                <ul>
+                    <li>Nombre: @_usuario.Nombre.</li>
+                    <li>Apellido: @_usuario.Apellido.</li>
+                    <li>Correo: @_usuario.Correo.</li>
+                    @if(_usuario.Permisos != null && _usuario.Permisos.Count == 0) {
+                        <li>El usuario no posee permisos adicionales.</li>
+                    }
+                    else if(_usuario.Permisos != null) {
+                        <li>Actualmente el usuario solo posee permisos para:
+                            <ul>
+                                @foreach(Permiso p in _usuario.Permisos) {
+                                    <li>@p.</li>
+                                }
+                            </ul>
+                        </li> 
+                    }
+                </ul>
+            </div>
+
+            <button @onclick="_PaginaModificar" class="btn btn-primary" style="margin-right: 5px;">Modificar datos personales</button>
+
+            @if(_usuario.Id == sesionActual.Ejecutar().Id) {
+                <button @onclick="_MensajeCerrarSesion" class="btn btn-danger">Cerrar sesión</button>
+            }
+        </div>
+    }
+    else { // Se modifica el usuario
+         @if(_usuario.Id == sesionActual.Ejecutar().Id) { // El usuario actual quiere modificar sus datos
+            <h3>Modificar datos de Usuario</h3>
+
+            <div style="margin-bottom: 10px;">
+                Ingrese su nuevo nombre: <br>
+                <input @bind="_usuario.Nombre" placeholder="Nombre" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+            </div>
+
+            <div style="margin-bottom: 10px;" >
+                Ingrese su nuevo apellido: <br>
+                <input @bind="_usuario.Apellido" placeholder="Apellido" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+            </div>
+
+            <div style="margin-bottom: 10px;" >
+                Ingrese su nuevo correo: <br>
+                <input @bind="_usuario.Correo" placeholder="Correo" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+            </div>
+
+            <div style="margin-bottom: 10px;" >
+                Ingrese su nueva contraseña:  <br>
+                <input @bind="_contraseñaNueva" placeholder="Contraseña" type="password"  style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+            </div>
+            <br>
+            <button @onclick="_ConfirmarUsuario" class="btn btn-primary" style="margin-right: 5px;">Confirmar cambios</button>
+
+            <button @onclick="_MensajePerderDatos" class="btn btn-secondary">Volver</button>
+        
+    }
+    else{ // El administrador quiere agregar o eliminar permisos
+        <div class="container mt-4">
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    <h3 >Vista de administrador</h3>
+
+                    <p>Indique los permisos a otorgar y quitar</p>
+                    
+                    <div class="table-responsive">
+                        @if(_usuario.Permisos != null && _usuario.Permisos.Count() < 6) {
+                            <table class="table table-bordered table-striped">
+                                <thead class="thead-dark" >
+                                    <tr>
+                                        <th>Permisos a otorgar:</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        @if(!_usuario.Permisos.Contains(Permiso.ExpedienteAlta)) {
+                                            <td>Permiso de alta de Expedientes</td>
+                                            <td><button @onclick="()=>_AgregarPermiso(Permiso.ExpedienteAlta)" class="btn btn-primary">Agregar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(!_usuario.Permisos.Contains(Permiso.ExpedienteBaja)) {
+                                                <td>Permiso de baja de Expedientes</td>
+                                                <td><button @onclick="()=>_AgregarPermiso(Permiso.ExpedienteBaja)" class="btn btn-primary">Agregar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(!_usuario.Permisos.Contains(Permiso.ExpedienteModificacion)) {
+                                                <td>Permiso de modificación de Expedientes</td>
+                                                <td><button @onclick="()=>_AgregarPermiso(Permiso.ExpedienteModificacion)" class="btn btn-primary">Agregar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(!_usuario.Permisos.Contains(Permiso.TramiteAlta)) {
+                                                <td>Permiso de alta de Trámites</td>
+                                                <td><button @onclick="()=>_AgregarPermiso(Permiso.TramiteAlta)" class="btn btn-primary">Agregar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(!_usuario.Permisos.Contains(Permiso.TramiteBaja)) {
+                                                <td>Permiso de baja de Trámites</td>
+                                                <td><button @onclick="()=>_AgregarPermiso(Permiso.TramiteBaja)" class="btn btn-primary">Agregar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(!_usuario.Permisos.Contains(Permiso.TramiteModificacion)) {
+                                                <td>Permiso de modificación de Trámites</td>
+                                                <td><button @onclick="()=>_AgregarPermiso(Permiso.TramiteModificacion)" class="btn btn-primary">Agregar</button></td>
+                                            }
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            }
+                            else {
+                                <p class="thead-dark">No existen permisos para agregar</p>
+                            }  
+                    </div>
+                    <div class="table-responsive">
+                            @if(_usuario.Permisos != null && _usuario.Permisos.Count() > 0) {
+                                <table class="table table-bordered table-striped">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>Permisos a quitar:</th>
+                                            <th>Acción</th>
+                                        </tr>
+                                    </thead>
+                                    
+                                    <tbody>
+                                        <tr>
+                                            @if(_usuario.Permisos.Contains(Permiso.ExpedienteAlta)) {
+                                                <td>Permiso de alta de Expedientes</td>
+                                                <td><button @onclick="()=>_EliminarPermiso(Permiso.ExpedienteAlta)" class="btn btn-danger">Eliminar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(_usuario.Permisos.Contains(Permiso.ExpedienteBaja)) {
+                                                <td>Permiso de baja de Expedientes</td>
+                                                <td><button @onclick="()=>_EliminarPermiso(Permiso.ExpedienteBaja)" class="btn btn-danger">Eliminar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(_usuario.Permisos.Contains(Permiso.ExpedienteModificacion)) {
+                                                <td>Permiso de modificación de Expedientes</td>
+                                                <td><button @onclick="()=>_EliminarPermiso(Permiso.ExpedienteModificacion)" class="btn btn-danger">Eliminar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(_usuario.Permisos.Contains(Permiso.TramiteAlta)) {
+                                                <td>Permiso de alta de Trámites</td>
+                                                <td><button @onclick="()=>_EliminarPermiso(Permiso.TramiteAlta)" class="btn btn-danger">Eliminar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(_usuario.Permisos.Contains(Permiso.TramiteBaja)) {
+                                                <td>Permiso de baja de Trámites</td>
+                                                <td><button @onclick="()=>_EliminarPermiso(Permiso.TramiteBaja)" class="btn btn-danger">Eliminar</button></td>
+                                            }
+                                        </tr>
+                                        <tr>
+                                            @if(_usuario.Permisos.Contains(Permiso.TramiteModificacion)) {
+                                                <td>Permiso de modificación de Trámites</td>
+                                                <td><button @onclick="()=>_EliminarPermiso(Permiso.TramiteModificacion)" class="btn btn-danger">Eliminar</button></td>
+                                            }
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            }
+                            else {
+                                <p class="thead-dark" >No existen permisos para eliminar</p>
+                            } 
+                    </div>
+                    <div class="text-center" >
+                        <button @onclick="_VolverUsuario" class="btn btn-secondary" >Volver</button>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        }   
+    }
+}
+else {
+    <div class="container mt-4">
+        <ComponentError Text="@_stMensaje" ErrorSesion="_error" />
+    </div>
+}
+
+<Mensaje @ref="_mensajeCerrarSesion" Text="@_stMensaje" eventCallback="_CerrarSesion" />
+
+<Mensaje @ref="_mensajePerderDatos" Text="@_stMensaje" eventCallback="_VolverUsuario" />
+
+<ConfirmarUsuario @ref="_confirmarUsuario" eventCallback="_ModificarUsuario" />
+
+@code {
+
+#region Variables de Usuario
+    [Parameter] public int? IdUsuario { get; set; }
+    private Usuario _usuario = new Usuario();
+    private string _contraseñaNueva = "";
+    private bool _modificarUsuario = false; // En caso de que se desee modificar datos del usuario
+#endregion Variables de Usuario
+
+#region Variables de Errores y Mensajes
+    private bool _error = false; // Saber si ocurrió un error al acceder a la base de datos
+    private Mensaje _mensajeCerrarSesion = null!;
+    private Mensaje _mensajePerderDatos = null!;
+    private string _stMensaje = "";
+    private ConfirmarUsuario _confirmarUsuario = null!;
+#endregion Variables de Errores y Mensajes
+
+#region Métodos de página
+    protected override void OnParametersSet()
+    {
+        try{
+            usuarioActivo.Ejecutar(out _error);
+            if (IdUsuario != null){
+                _usuario = consultar.Ejecutar(IdUsuario.Value);
+            }
+        }
+        catch (Exception e){ //Catch para los errores en el caso de uso
+            _stMensaje = $"Ocurrió un error inesperado. {e.Message}";
+            _error = true; // Muestra en la página el error
+        }
+    }
+
+    private void _VolverListarUsuario(string url){//solo administrador
+        navigationManager.NavigateTo("/listarusuarios");
+    }
+
+    private void _VolverUsuario(){
+        _modificarUsuario = false;
+    }
+
+    private void _PaginaModificar()
+    {
+        _modificarUsuario = true;
+    }
+#endregion Metodos de pagina
+
+#region Métodos de usuario
+    private void _CerrarSesion(){
+        cerrarSesion.Ejecutar(sesionActual.Ejecutar());
+        navigationManager.NavigateTo("/");
+    }
+
+    private void _AgregarPermiso(Permiso permiso){
+        agregarPermiso.Ejecutar(_usuario.Id, permiso);
+        _usuario.Permisos = consultar.Ejecutar(_usuario.Id).Permisos;
+    }
+
+    private void _EliminarPermiso(Permiso permiso){
+        eliminarPermiso.Ejecutar(_usuario.Id, permiso);
+        _usuario.Permisos = consultar.Ejecutar(_usuario.Id).Permisos;
+    }
+
+    private void _ModificarUsuario()
+    {
+        modificar.Ejecutar(_usuario, _contraseñaNueva);
+        _VolverUsuario();
+    }
+#endregion Metodos de usuario
+
+#region Métodos de mensaje
+    private void _MensajeCerrarSesion(){
+        _stMensaje = "¿Está seguro que quiere cerrar la sesión?";
+        _mensajeCerrarSesion.MostrarMensaje();
+    }
+
+    private void _MensajePerderDatos(){
+        _stMensaje = "¿Está seguro que desea salir? Los datos que haya ingresado se perderán.";
+        _mensajePerderDatos.MostrarMensaje();
+    }
+
+    private void _ConfirmarUsuario()
+    {
+        _confirmarUsuario.MostrarConfirmar();
+    }
+#endregion Metodos de mensaje
+
+}
